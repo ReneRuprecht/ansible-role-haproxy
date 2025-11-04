@@ -1,0 +1,121 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+platforms:
+  - name: debian12
+    image: "geerlingguy/docker-debian12-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+
+  - name: debian13
+    image: "geerlingguy/docker-debian13-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      debian12:
+        haproxy_global:
+          log: "/dev/log local0"
+          maxconn: 2000
+          user: "haproxy"
+          group: "haproxy"
+          pidfile: "/var/run/haproxy.pid"
+          chroot: "/var/lib/haproxy"
+          daemon: true
+          ssl_enable: false
+          ssl_certificates:
+            - "/tmp/wildcard.pem"
+          ssl_ciphers: "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256"
+          ssl_ciphersuites: "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"
+          ssl_bind_options: "no-sslv3 no-tls-tickets"
+
+        haproxy_defaults:
+          log: "global"
+          mode: "http"
+          options:
+            - "http-server-close"
+            - "forwardfor"
+            - "redispatch"
+          timeout_connect: "5s"
+          timeout_client: "50s"
+          timeout_server: "50s"
+          timeout_check: "5s"
+          timeout_queue: "30s"
+          timeout_http_request: "10s"
+          timeout_http_keep_alive: "10s"
+          retries: 3
+          maxconn: 2000
+
+        haproxy_stats_enable: true
+        haproxy_stats_address: "127.0.0.1"
+        haproxy_stats_port: 9000
+        haproxy_stats_uri: "/stats"
+        haproxy_stats_refresh: "10s"
+        haproxy_stats_auth:
+          user: "user"
+          password: "password"
+
+        haproxy_frontends:
+          - name: "http_frontend"
+            address: "0.0.0.0"
+            port: 80
+            ssl_enable: true
+            ssl_certificates:
+              - "/tmp/wildcard.pem"
+            routes:
+              - acl_name: "is_admin"
+                acl_condition: "path_beg /admin"
+                backend_name: "default_backend"
+              - acl_name: "is_admin2"
+                acl_condition: "path_beg /admin"
+                backend_name: "default_backend"
+            options:
+              - "httplog"
+              - "http-keep-alive"
+            default_backend: "default_backend"
+
+        haproxy_backends:
+          - name: "default_backend"
+            mode: "http"
+            balance: "roundrobin"
+            ssl_enable: true
+            verify: none
+            http_check:
+              send:
+                method: GET
+                uri: /
+              expect: "status 200"
+            options:
+              - "http-server-close"
+              - "tcpka"
+            servers:
+              - name: "default_server"
+                ssl_enable: false
+                address: "127.0.0.1"
+                port: 8080
+              - name: "default_server1"
+                address: "127.0.0.1"
+                port: 8080
+              - name: "default_server2"
+                address: "127.0.0.1"
+                backup: true
+            port: 8080
+  playbooks:
+    converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+verifier:
+  name: ansible

@@ -1,0 +1,44 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Update apt cache.
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      when: ansible_facts.os_family == 'Debian'
+      changed_when: false
+
+    - name: Wait for systemd to complete initialization.
+      ansible.builtin.command:
+        cmd: systemctl is-system-running
+      register: systemctl_status
+      until: >
+        'running' in systemctl_status.stdout or
+        'degraded' in systemctl_status.stdout
+      retries: 30
+      delay: 5
+      when: ansible_facts.service_mgr == 'systemd'
+      changed_when: false
+      failed_when: systemctl_status.rc > 1
+
+    - name: Generate an OpenSSL private key
+      community.crypto.openssl_privatekey:
+        path: /tmp/my_private_key.pem
+      changed_when: false
+
+    - name: Create simple self-signed certificate
+      community.crypto.x509_certificate:
+        path: /tmp/wildcard.crt
+        privatekey_path: /tmp/my_private_key.pem
+        provider: selfsigned
+      changed_when: false
+
+    - name: Combine key and crt to pem
+      ansible.builtin.shell:
+        cmd: "cat /tmp/my_private_key.pem /tmp/wildcard.crt > /tmp/wildcard.pem"
+      changed_when: false
+
+  roles:
+    - role: reneruprecht.haproxy

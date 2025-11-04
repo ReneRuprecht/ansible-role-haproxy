@@ -1,0 +1,12 @@
+---
+- name: Create group
+  ansible.builtin.group:
+    name: haproxy
+    system: true
+    state: present
+
+- name: Create user
+  ansible.builtin.user:
+    name: haproxy
+    system: true
+    state: present

@@ -1,0 +1,8 @@
+---
+- name: Create user
+  ansible.builtin.include_tasks:
+    file: user.yml
+
+- name: Install haproxy
+  ansible.builtin.include_tasks:
+    file: setup.yml

@@ -1,0 +1,72 @@
+---
+haproxy_global:
+  log: "/dev/log local0"
+  maxconn: 2000
+  user: "haproxy"
+  group: "haproxy"
+  chroot: "/var/lib/haproxy"
+  pidfile: "/var/run/haproxy.pid"
+  daemon: true
+  ssl_enable: false
+  ssl_certificates: []
+  ssl_ciphers: "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256"
+  ssl_ciphersuites: "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"
+  ssl_bind_options: "no-sslv3 no-tls-tickets"
+
+haproxy_defaults:
+  mode: "http"
+  log: "global"
+  retries: 3
+  timeout_connect: 5s
+  timeout_client: 50s
+  timeout_server: 50s
+  maxconn: 2000
+  # options:
+  #   - httplog
+  #   - dontlognull
+  #   - http-server-close
+
+haproxy_frontends: []
+  # - name: "http_frontend"
+  #   address: "0.0.0.0"
+  #   port: 80
+  #   ssl_enable: true
+  #   ssl_certificates:
+  #     - "/tmp/wildcard.pem"
+  #   routes:
+  #     - acl_name: "is_admin"
+  #       acl_condition: "path_beg /admin"
+  #       backend_name: "default_backend"
+  #   options:
+  #     - "httplog"
+  #     - "http-keep-alive"
+  #   default_backend: "default_backend"
+
+haproxy_backends: []
+  # - name: "default_backend"
+  #   mode: "http"
+  #   balance: "roundrobin"
+  #   http_check:
+  #     send:
+  #       method: GET
+  #       uri: /stats
+  #     expect: "status 200"
+  #   servers:
+  #     - name: "default_server"
+  #       address: "127.0.0.1"
+  #       port: 9000
+  #     - name: "default_server2"
+  #       address: "127.0.0.1"
+  #       ssl_enable: true
+  #       verify: "none"
+  #       backup: true
+  #   port: 9000
+
+haproxy_stats_enable: true
+haproxy_stats_address: "127.0.0.1"
+haproxy_stats_port: 9000
+haproxy_stats_uri: "/stats"
+haproxy_stats_refresh: "10s"
+# haproxy_stats_auth:
+#   user: ""
+#   password: ""

@@ -1,0 +1,100 @@
+{{ ansible_managed | comment }}
+
+global
+    log {{ haproxy_global.log }}
+    maxconn {{ haproxy_global.maxconn }}
+    user {{ haproxy_global.user }}
+    group {{ haproxy_global.group }}
+    pidfile {{ haproxy_global.pidfile }}
+    chroot {{ haproxy_global.chroot }}
+{% if haproxy_global.daemon is defined and haproxy_global.daemon %}
+    daemon
+{% endif %}
+{% if haproxy_global.ssl_enable %}
+    ssl-default-bind-ciphers {{ haproxy_global.ssl_ciphers }}
+    ssl-default-bind-ciphersuites {{ haproxy_global.ssl_ciphersuites }}
+    ssl-default-bind-options {{ haproxy_global.ssl_bind_options }}
+{% endif %}
+
+defaults
+    log {{ haproxy_defaults.log }}
+    mode {{ haproxy_defaults.mode }}
+{% if haproxy_defaults.options is defined -%}
+{% for option in haproxy_defaults.options %}
+    option  {{ option }}
+{% endfor %}
+{%- endif %}
+    timeout connect {{ haproxy_defaults.timeout_connect }}
+    timeout client  {{ haproxy_defaults.timeout_client }}
+    timeout server  {{ haproxy_defaults.timeout_server }}
+    retries {{ haproxy_defaults.retries }}
+    maxconn {{ haproxy_defaults.maxconn }}
+
+{% if haproxy_stats_enable -%}
+listen stats
+    bind {{ haproxy_stats_address }}:{{ haproxy_stats_port }}
+    mode http
+    stats enable
+    stats uri {{ haproxy_stats_uri }}
+    stats refresh {{ haproxy_stats_refresh }}
+{% if haproxy_stats_auth is defined %}
+    stats auth {{ haproxy_stats_auth.user }}:{{ haproxy_stats_auth.password }}
+{% endif %}
+{%- endif %}
+
+{% for fe in haproxy_frontends %}
+frontend {{ fe.name }}
+{% set certs_to_use = fe.ssl_certificates if fe.ssl_certificates is defined else haproxy_global.ssl_certificates %}
+    bind {{ fe.address }}:{{ fe.port }}{% if fe.ssl_enable is defined and fe.ssl_enable %} ssl crt {{ certs_to_use | join(' ') }}{% endif %}
+
+    mode {{ fe.mode | default(haproxy_defaults.mode) }}
+
+{% if haproxy_default_backend is defined or fe.default_backend is defined %}
+    default_backend {{ fe.default_backend | default(haproxy_default_backend) }}
+{% endif %}
+
+{%- if fe.options is defined %}
+{% for option in fe.options %}
+    option  {{ option }}
+{% endfor %}
+{% endif %}
+
+{% if fe.routes is defined %}
+{% for route in fe.routes %}
+    acl {{ route.acl_name }} {{ route.acl_condition }}
+    use_backend {{ route.backend_name }} if {{ route.acl_name }}
+{% if not loop.last %}
+    
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% for be in haproxy_backends %}
+backend {{ be.name }}
+    mode {{ be.mode | default(haproxy_defaults.mode) }}
+    balance {{ be.balance | default('roundrobin') }}
+
+{% if be.options is defined %}
+{% for option in be.options %}
+    option {{ option }}
+{% endfor %}
+{% endif %}
+{% if be.http_check is defined %}
+    http-check send meth {{ be.http_check.send.method }} uri {{ be.http_check.send.uri }}
+    http-check expect {{ be.http_check.expect }}
+{% endif %}
+
+{% for server in be.servers %}
+{% set server_port_val = server.port if server.port is defined else be.port %}
+    server {{ server.name }} {{ server.address }}:{{ server_port_val }}{% set ssl_val = server.ssl_enable if server.ssl_enable is defined else be.ssl_enable %}
+{% if ssl_val is defined and ssl_val %} ssl{% endif %}
+{% set verify_val = server.verify if server.verify is defined else be.verify %}
+{% if verify_val is defined and verify_val %} verify {{ verify_val }}{% if verify_val == 'required' and server.ca_file is defined %} ca-file {{ server.ca_file }}{% endif %}{% endif %}
+{% if be.http_check is defined and not (server.http_check is defined and not server.http_check) %} check {% endif %}
+{% if server.backup is defined and server.backup %} backup {% endif %}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
+{% endfor %}
