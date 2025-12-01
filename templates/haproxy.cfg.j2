@@ -43,6 +43,7 @@ listen stats
 {%- endif %}
 
 {% for fe in haproxy_frontends %}
+
 frontend {{ fe.name }}
 {% set certs_to_use = fe.ssl_certificates if fe.ssl_certificates is defined else haproxy_global.ssl_certificates %}
     bind {{ fe.address }}:{{ fe.port }}{% if fe.ssl_enable is defined and fe.ssl_enable %} ssl crt {{ certs_to_use | join(' ') }}{% endif %}
@@ -71,6 +72,7 @@ frontend {{ fe.name }}
 {% endfor %}
 
 {% for be in haproxy_backends %}
+
 backend {{ be.name }}
     mode {{ be.mode | default(haproxy_defaults.mode) }}
     balance {{ be.balance | default('roundrobin') }}
