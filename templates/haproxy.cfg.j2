@@ -93,7 +93,7 @@ backend {{ be.name }}
 {% if ssl_val is defined and ssl_val %} ssl{% endif %}
 {% set verify_val = server.verify if server.verify is defined else be.verify %}
 {% if verify_val is defined and verify_val %} verify {{ verify_val }}{% if verify_val == 'required' and server.ca_file is defined %} ca-file {{ server.ca_file }}{% endif %}{% endif %}
-{% if be.http_check is defined and not (server.http_check is defined and not server.http_check) %} check {% endif %}
+{% if server.check is defined and server.check %} check {% elif be.check is defined and be.check and server.check is not defined %} check {% else %} {% endif %}
 {% if server.backup is defined and server.backup %} backup {% endif %}
 {% if not loop.last %}
 

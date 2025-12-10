@@ -88,6 +88,11 @@ provisioner:
               - "httplog"
               - "http-keep-alive"
             default_backend: "default_backend"
+          - name: "http_frontend_tcp"
+            address: "0.0.0.0"
+            port: 8888
+            mode: "tcp"
+            default_backend: "default_backend_tcp"
 
         haproxy_backends:
           - name: "default_backend"
@@ -115,6 +120,23 @@ provisioner:
                 address: "127.0.0.1"
                 backup: true
             port: 8080
+          - name: "default_backend_tcp"
+            mode: "tcp"
+            balance: "roundrobin"
+            servers:
+              - name: "default_server"
+                ssl_enable: false
+                address: "127.0.0.1"
+                port: 8888
+                check: true
+              - name: "default_server1"
+                address: "127.0.0.1"
+                port: 8888
+              - name: "default_server2"
+                address: "127.0.0.1"
+                backup: true
+                check: false
+            port: 8888
   playbooks:
     converge: ${MOLECULE_PLAYBOOK:-converge.yml}
 verifier:

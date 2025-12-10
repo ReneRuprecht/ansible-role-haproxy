@@ -46,6 +46,7 @@ haproxy_backends: []
   # - name: "default_backend"
   #   mode: "http"
   #   balance: "roundrobin"
+  #   check: true
   #   http_check:
   #     send:
   #       method: GET
@@ -60,6 +61,7 @@ haproxy_backends: []
   #       ssl_enable: true
   #       verify: "none"
   #       backup: true
+  #       check: false
   #   port: 9000
 
 haproxy_stats_enable: true
