@@ -46,6 +46,9 @@ haproxy_backends: []
   # - name: "default_backend"
   #   mode: "http"
   #   balance: "roundrobin"
+  #   headers:
+  #     X-Forwarded-Proto: https
+  #     X-Forwarded-Port: 443
   #   check: true
   #   http_check:
   #     send:

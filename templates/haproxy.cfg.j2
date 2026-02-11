@@ -86,6 +86,11 @@ backend {{ be.name }}
     http-check send meth {{ be.http_check.send.method }} uri {{ be.http_check.send.uri }}
     http-check expect {{ be.http_check.expect }}
 {% endif %}
+{% if be.headers is defined %}
+{% for key, value in be.headers.items() %}
+    http-request set-header {{ key }} {{ value }}
+{% endfor %}
+{% endif %}
 
 {% for server in be.servers %}
 {% set server_port_val = server.port if server.port is defined else be.port %}

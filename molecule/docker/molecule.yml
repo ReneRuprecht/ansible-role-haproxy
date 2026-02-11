@@ -28,7 +28,7 @@ provisioner:
   name: ansible
   inventory:
     host_vars:
-      debian12:
+      debian13:
         haproxy_global:
           log: "/dev/log local0"
           maxconn: 2000
@@ -97,6 +97,9 @@ provisioner:
         haproxy_backends:
           - name: "default_backend"
             mode: "http"
+            headers:
+              X-Forwarded-Proto: https
+              X-Forwarded-Port: 443
             balance: "roundrobin"
             ssl_enable: true
             verify: none
