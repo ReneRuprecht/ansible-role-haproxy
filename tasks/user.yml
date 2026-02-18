@@ -1,12 +1,15 @@
 ---
 - name: Create group
+  become: true
   ansible.builtin.group:
-    name: haproxy
+    name: "{{ haproxy_global.group }}"
     system: true
     state: present
 
 - name: Create user
+  become: true
   ansible.builtin.user:
-    name: haproxy
-    system: true
-    state: present
+    name: "{{ haproxy_global.user }}"
+    shell: /bin/bash
+    home: "/home/{{ haproxy_global.user }}"
+    create_home: true

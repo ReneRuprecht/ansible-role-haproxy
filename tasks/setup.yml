@@ -1,20 +1,34 @@
 ---
 - name: Install haproxy
+  become: true
   ansible.builtin.package:
     name: haproxy
     state: present
 
 - name: Setup haproxy
+  become: true
   ansible.builtin.template:
     src: haproxy.cfg.j2
     dest: /etc/haproxy/haproxy.cfg
     validate: haproxy -c -f %s
-    mode: "0640"
+    mode: "0600"
+    owner: "{{ haproxy_global.user }}"
+    group: "{{ haproxy_global.group }}"
     backup: true
   notify:
     - Restart haproxy
 
+- name: Allow haproxy reload
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/haproxy_reload
+    content: "{{ haproxy_global.user }} ALL=NOPASSWD: /bin/systemctl reload haproxy"
+    owner: root
+    group: root
+    mode: '0440'
+
 - name: Start and enable haproxy
+  become: true
   ansible.builtin.service:
     name: haproxy
     state: started
