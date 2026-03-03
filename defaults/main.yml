@@ -26,6 +26,12 @@ haproxy_defaults:
   #   - dontlognull
   #   - http-server-close
 
+haproxy_resolvers: []
+  # - name: ""
+  #   servers:
+  #     - name:
+  #       address:
+
 haproxy_frontends: []
   # - name: "http_frontend"
   #   address: "0.0.0.0"
@@ -58,6 +64,8 @@ haproxy_backends: []
   #   servers:
   #     - name: "default_server"
   #       address: "127.0.0.1"
+  #       resolver: "mydns"
+  #       init_addr: "none"
   #       port: 9000
   #     - name: "default_server2"
   #       address: "127.0.0.1"
